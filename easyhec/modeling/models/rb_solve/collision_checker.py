@@ -26,9 +26,11 @@ class CollisionChecker:
             user_link_names=link_names,
             user_joint_names=joint_names,
             move_group=move_group,
-            joint_vel_limits=np.ones(7),
-            joint_acc_limits=np.ones(7))
-
+            # joint_vel_limits=np.ones(7),
+            # joint_acc_limits=np.ones(7))
+            joint_vel_limits=np.ones(6),
+            joint_acc_limits=np.ones(6))
+        
     def add_point_cloud(self, point_cloud):
         """
         :param point_cloud: (N, 3) numpy array in arm base frame

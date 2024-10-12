@@ -107,7 +107,9 @@ class RenderXarmApiHelper:
             if robot_mapping[robot_type] == "Franka":
                 from easyhec.structures.franka_mapping import link_name_mesh_path_mapping
             elif robot_mapping[robot_type] == "Xarm":
-                from easyhec.structures.xarm_mapping import link_name_mesh_path_mapping
+                from easyhec.structures.xarm6_mapping import link_name_mesh_path_mapping
+            elif robot_mapping[robot_type] == "Xarm6":
+                from easyhec.structures.xarm6_mapping import link_name_mesh_path_mapping
             for k, v in link_name_mesh_path_mapping.items():
                 if v != "":
                     RenderXarmApiHelper.meshes[k] = trimesh.load(v, force="mesh")
@@ -138,15 +140,16 @@ def nvdiffrast_render_xarm_api(urdf_path, robot_pose, qpos, H, W, K, robot_type 
 
 
 def nvdiffrast_parallel_render_xarm_api(urdf_path, robot_pose, qpos, H, W, K, robot_type = 1, return_ndarray=True):
-    xarm_meshes = RenderXarmApiHelper.get_meshes(robot_type=robot_type)
+    xarm_meshes = RenderXarmApiHelper.get_meshes(robot_type=2)  # xarm6
     sk = RenderXarmApiHelper.get_sk(urdf_path)
     names = [link.name for link in sk.robot.get_links()]
     poses = []
     meshes = []
     num = 8 if robot_mapping[robot_type] == "Xarm" else 7
-    for i in range(num):
-        pose = robot_pose @ sk.compute_forward_kinematics(qpos, i + 1).to_transformation_matrix()
-        mesh = xarm_meshes[names[i + 1]]
+    for xarm_mesh_name in list(xarm_meshes.keys()):
+        # pose = robot_pose @ sk.compute_forward_kinematics(qpos, i + 1).to_transformation_matrix()
+        pose = robot_pose @ sk.compute_forward_kinematics_link_name(qpos, xarm_mesh_name).to_transformation_matrix()
+        mesh = xarm_meshes[xarm_mesh_name]
         meshes.append(mesh)
         poses.append(pose)
     mask = nvdiffrast_parallel_render_meshes_api(meshes, poses, H, W, K, return_ndarray=return_ndarray)

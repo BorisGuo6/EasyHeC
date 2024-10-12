@@ -26,7 +26,8 @@ from easyhec.trainer.base import BaseTrainer
 from easyhec.trainer.utils import *
 from easyhec.utils import plt_utils
 from easyhec.utils.os_utils import archive_runs
-from easyhec.utils.point_drawer import PointDrawer
+# from easyhec.utils.point_drawer import PointDrawer
+from easyhec.utils.prompt_drawer import PromptDrawer
 from easyhec.utils.realsense_api import RealSenseAPI
 from easyhec.utils.vis3d_ext import Vis3D
 
@@ -185,7 +186,8 @@ class RBSolverIterTrainer(BaseTrainer):
         )
         index = len(self.qposes) - 1
         qpose = self.qposes[-1]
-        vis3d.add_xarm(qpose.tolist() + [0, 0])
+        # vis3d.add_xarm(qpose.tolist() + [0, 0])
+        vis3d.add_xarm(qpose.tolist())
         arm = self.arm
         speed = self.cfg.model.rbsolver_iter.use_realarm.speed
         if self.cfg.model.rbsolver_iter.use_realarm.enable is True and self.cfg.use_xarm is True:
@@ -206,8 +208,10 @@ class RBSolverIterTrainer(BaseTrainer):
                         input("Please visualize the next joint pose in Wis3D and press Enter to drive the robot...")
                     for ti, target_qpos in enumerate(tqdm.tqdm(plan_qposes)):
                         code, joint_state = arm.get_joint_states(is_radian=True)
-                        joint_pos = joint_state[0][:7]
-                        diff = target_qpos[:7] - joint_pos
+                        # joint_pos = joint_state[0][:7]
+                        joint_pos = joint_state[0][:6]
+                        # diff = target_qpos[:7] - joint_pos
+                        diff = target_qpos[:6] - joint_pos
                         qvel = diff / timestep / safety_factor
                         qvel_cliped = np.clip(qvel, -0.3, 0.3)
                         arm.vc_set_joint_velocity(qvel_cliped, is_radian=True, is_sync=True, duration=timestep)
@@ -237,6 +241,7 @@ class RBSolverIterTrainer(BaseTrainer):
         vis3d.add_image(rgb, name='img')
 
         retcode, curr_radian = arm.get_servo_angle(is_radian=True)
+        curr_radian = curr_radian[:6]
         assert retcode == 0
         np.savetxt(osp.join(outdir, f"qpos/{index:06d}.txt"), curr_radian)
 
@@ -247,7 +252,7 @@ class RBSolverIterTrainer(BaseTrainer):
         model_weight = osp.join(POINTREND_DIR, pointrend_model_weight)
         image_path = osp.join(outdir, f"color/{index:06d}.png")
         if self.cfg.model.rbsolver_iter.use_realarm.use_sam.enable is True:
-            point_drawer = PointDrawer(screen_scale=1.75,
+            point_drawer = PromptDrawer(screen_scale=1.75,
                                        sam_checkpoint=self.cfg.model.rbsolver_iter.use_realarm.use_sam.sam_checkpoint)
             _, _, binary_mask = point_drawer.run(rgb)
             pred_binary_mask = binary_mask.astype(np.uint8)
@@ -270,7 +275,8 @@ class RBSolverIterTrainer(BaseTrainer):
         self.tb_writer.add_scalar("explore/var_mean", outputs['var_mean'].item(), explore_it)
         self.tb_writer.add_scalar("explore/variance", outputs['variance'].item(), explore_it)
         next_qpos = outputs['qpos']
-        self.qposes = np.concatenate([self.qposes, next_qpos[:7][None]], axis=0)
+        # self.qposes = np.concatenate([self.qposes, next_qpos[:7][None]], axis=0)
+        self.qposes = np.concatenate([self.qposes, next_qpos[:6][None]], axis=0)
         plan_result = outputs['plan_result']
         self.plan_result = plan_result
 
@@ -309,8 +315,12 @@ class RBSolverIterTrainer(BaseTrainer):
                 time.sleep(1)
                 for target_qpos in tqdm.tqdm(plan_qposes):
                     code, joint_state = arm.get_joint_states(is_radian=True)
-                    joint_pos = joint_state[0][:7]
-                    diff = target_qpos[:7] - joint_pos
+                    # joint_pos = joint_state[0][:7]
+                    joint_pos = joint_state[0][:6]
+                    
+                    # diff = target_qpos[:7] - joint_pos
+                    diff = target_qpos[:6] - joint_pos
+                    
                     qvel = diff / timestep / safety_factor
                     qvel_cliped = np.clip(qvel, -0.3, 0.3)
                     arm.vc_set_joint_velocity(qvel_cliped, is_radian=True, is_sync=True, duration=timestep)
@@ -322,19 +332,19 @@ class RBSolverIterTrainer(BaseTrainer):
             self.arm.go_to_rest_pose()
 
     def initialize_Tc_c2b(self):
-        if self.cfg.use_xarm is True:
-            cmd = f"cd {osp.abspath('.')}/third_party/pvnet && " \
-                f"{sys.executable} run_demo_xarm7.py -c configs/xarm7/10k.yaml " \
-                "demo_dir ../../data/xarm7/example" \
-                " demo_pattern 'color/*png'" \
-                " dbg True" \
-                f" custom.K '{self.K.tolist()}'"
-            output = subprocess.check_output(cmd, shell=True).decode('utf-8').strip().split('\n')
-            nums = "".join(output[-4:]).replace("[", " ").replace("]", " ").replace(",", " ").strip().split()
-            init_Tc_c2b = np.array(list((map(float, nums)))).reshape(4, 4)
-        else:
-            output = self.cfg.model.rbsolver_iter.init_Tc_c2b
-            init_Tc_c2b = np.array(output).reshape(4, 4)
+        # if self.cfg.use_xarm is True:
+        #     cmd = f"cd {osp.abspath('.')}/third_party/pvnet && " \
+        #         f"{sys.executable} run_demo_xarm7.py -c configs/xarm7/10k.yaml " \
+        #         "demo_dir ../../data/xarm7/example" \
+        #         " demo_pattern 'color/*png'" \
+        #         " dbg True" \
+        #         f" custom.K '{self.K.tolist()}'"
+        #     output = subprocess.check_output(cmd, shell=True).decode('utf-8').strip().split('\n')
+        #     nums = "".join(output[-4:]).replace("[", " ").replace("]", " ").replace(",", " ").strip().split()
+        #     init_Tc_c2b = np.array(list((map(float, nums)))).reshape(4, 4)
+        # else:
+        output = self.cfg.model.rbsolver_iter.init_Tc_c2b
+        init_Tc_c2b = np.array(output).reshape(4, 4)
         self.cfg.defrost()
         self.cfg.model.rbsolver.init_Tc_c2b = init_Tc_c2b.tolist()
         self.cfg.freeze()

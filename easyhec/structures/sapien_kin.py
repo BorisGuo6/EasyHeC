@@ -22,12 +22,20 @@ class SAPIENKinematicsModelStandalone:
         self.scene.step()
 
         self.model: sapien.PinocchioModel = self.robot.create_pinocchio_model()
+        self.link_names = [link.name for link in self.robot.get_links()]
 
     def compute_forward_kinematics(self, qpos, link_index):
         assert len(qpos) == self.robot.dof, f"qpos {len(qpos)} != {self.robot.dof}"
         self.model.compute_forward_kinematics(np.array(qpos))
 
         return self.model.get_link_pose(link_index)
+
+    def compute_forward_kinematics_link_name(self, qpos, link_name):
+        assert len(qpos) == self.robot.dof, f"qpos {len(qpos)} != {self.robot.dof}"
+        self.model.compute_forward_kinematics(np.array(qpos))
+        link_index = self.link_names.index(link_name)
+        return self.model.get_link_pose(link_index)
+
 
     def release(self):
         self.scene = None

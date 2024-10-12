@@ -153,7 +153,8 @@ class SpaceExplorer(nn.Module):
             for cam_pose in tqdm.tqdm(history_cam_poses, leave=False, disable="PYCHARM_HOSTED" in os.environ):
                 rendered_mask = render_api.nvdiffrast_parallel_render_xarm_api(self.cfg.urdf_path,
                                                                                np.linalg.inv(cam_pose),
-                                                                               qpos[:7] + [0, 0],
+                                                                            #    qpos[:7] + [0, 0],
+                                                                               qpos[:6],
                                                                                height, width,
                                                                                to_array(K),
                                                                                robot_type = 0,

@@ -1,4 +1,5 @@
 robot_mapping = [
     "Franka",
-    "Xarm"
+    "Xarm",
+    "Xarm6"
 ]

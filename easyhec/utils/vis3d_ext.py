@@ -567,7 +567,7 @@ class Vis3D(Wis3D):
             pq = sk.compute_forward_kinematics(qpos, link)
 
             pose = Rt_to_pose(transforms3d.quaternions.quat2mat(pq.q), pq.p)
-            from easyhec.structures.xarm_mapping import link_name_mesh_path_mapping
+            from easyhec.structures.xarm6_mapping import link_name_mesh_path_mapping
             mesh_path = link_name_mesh_path_mapping[link_name]
             if mesh_path == "": continue
             mesh = trimesh.load_mesh(mesh_path)
@@ -585,7 +585,8 @@ class Vis3D(Wis3D):
     def xarm_sk(self):
         if Vis3D._xarm_sk is None:
             from easyhec.structures.sapien_kin import SAPIENKinematicsModelStandalone
-            urdf_path = os.path.abspath("assets/xarm7_with_gripper_reduced_dof.urdf")
+            # urdf_path = os.path.abspath("assets/xarm7_with_gripper_reduced_dof.urdf")
+            urdf_path = os.path.abspath("assets/xarm6.urdf")
             sk = SAPIENKinematicsModelStandalone(urdf_path)
             Vis3D._xarm_sk = sk
         return Vis3D._xarm_sk
